@@ -1,30 +1,57 @@
 from tkinter import Entry, Button, Tk, StringVar, Frame, N, S, E, W, NE,END
 import Calculator
-def add_display(string):
-    global eText
-    global display
-    if eText.get() == "0":
-        eText.set(string)
-    else:
-        newvalue= eText.get()+string
-        eText.set(newvalue)
-    display.xview(END)
-def equals_Key():
-    global eText
-    global display
-    tokens= Calculator.get_token(eText.get())
-    rpn= Calculator.get_rpn(tokens)
-    result= Calculator.operate_expression(rpn)
+
+def isDisplayConcatenable(key,displayText):
+    # Si display vale 0, key tiene que ser un operador o un punto.
+    # Si el último digito de display es un digito, key tiene que ser un digito, punto o operador.
+    # Si el último digito de display es un operador, key tiene que ser un digito.
+    # si el último digito de display es un punto, key tiene que ser un digito.
+    # Si el último digito de display es un operador, key tiene que ser un digito.
+
+    if displayText=="0":
+        if Calculator.isOperator(key) or key==".":
+            return True
+    elif displayText[-1].isdigit() and (key.isdigit() or key=="." or Calculator.isOperator(key)):
+        return True
+    elif displayText[-1] == "." and key.isdigit():
+        return True
+    elif Calculator.isOperator(displayText[-1]) and key.isdigit():        
+        return True
+
+    return False
+def isDisplayReplaceable(key,displayText):
+    # Si display vale 0, key tiene que ser un operador o un punto.
+    if displayText == "0" and key.isdigit():
+        return True
+    return False
+def send_key(key,target):
+    display,entryVar= target
+    displayText=entryVar.get()
     
-    eText.set(str(result).rstrip('0').rstrip('.'))
+    if isDisplayConcatenable(key,displayText):
+        entryVar.set(displayText + key)
+    elif isDisplayReplaceable(key,displayText):
+        entryVar.set(key)        
+   
     display.xview(END)
+def equals_key(target):
+    display, entryVar= target
     
+    displayText= entryVar.get()
+    if Calculator.isExpression(displayText):
+        tokens= Calculator.parser(displayText)
+        rpn= Calculator.get_rpn(tokens)
+        result= Calculator.operate_expression(rpn)
+        
+        if str(result)=="0":
+            entryVar.set("0")
+        else:
+            entryVar.set(str(result).rstrip('0').rstrip('.'))
+            display.xview(END)   
 class Application(Frame):
-    def __init__(self, parent, *args, **kwargs):
-        global eText
-        global display
-        Frame.__init__(self, parent, *args, **kwargs)
+    def __init__(self, parent):        
         self.parent = parent
+        Frame.__init__(self, parent)
         self.parent.maxsize(500, 450)
         self.parent.minsize(300, 300)
         
@@ -47,14 +74,15 @@ class Application(Frame):
         mainframe.grid(column=0, row=0,columnspan=3, rowspan=3, sticky=(N, W, E, S), padx=10, pady=10 )
         
         # Display
-        eText = StringVar(value="0")
-        display= Entry(mainframe,textvariable=eText, font=("Verdana", 30, ), bd = 10, 
+        entryVar= StringVar(value="0")
+        display= Entry(mainframe,textvariable=entryVar, font=("Verdana", 30, ), bd = 10, 
                       state='readonly',
                       cursor="arrow",
                       justify="right" 
         )
         display.grid(row=0, column=0,columnspan=4, sticky=(W, E))     
-   
+        target= (display, entryVar)
+
         # Buttons
         fontsize= 15
         width=2
@@ -63,25 +91,25 @@ class Application(Frame):
         font=("Verdana", fontsize, )
         
         # row 4
-        Button(mainframe, text="/", command=lambda: add_display("/"), font=font, bd=bd,width=width).grid(row=1, column=3,sticky=sticky)
-        Button(mainframe, text="9", command=lambda: add_display("9"), font=font, bd=bd, width=width).grid(row=1, column=2,sticky=sticky)
-        Button(mainframe, text="8", command=lambda: add_display("8"), font=font, bd=bd, width=width).grid(row=1, column=1,sticky=sticky)
-        Button(mainframe, text="7", command=lambda: add_display("7"), font=font, bd=bd, width=width).grid(row=1, column=0,sticky=sticky)
+        Button(mainframe, text="/", command=lambda: send_key("/",target), font=font, bd=bd,width=width).grid(row=1, column=3,sticky=sticky)
+        Button(mainframe, text="9", command=lambda: send_key("9",target), font=font, bd=bd, width=width).grid(row=1, column=2,sticky=sticky)
+        Button(mainframe, text="8", command=lambda: send_key("8",target), font=font, bd=bd, width=width).grid(row=1, column=1,sticky=sticky)
+        Button(mainframe, text="7", command=lambda: send_key("7",target), font=font, bd=bd, width=width).grid(row=1, column=0,sticky=sticky)
         # row 3
-        Button(mainframe, text="*", command=lambda: add_display("*"), font=font, bd=bd, width=width).grid(row=2, column=3,sticky=sticky)
-        Button(mainframe, text="6", command=lambda: add_display("6"), font=font, bd=bd, width=width).grid(row=2, column=2,sticky=sticky)
-        Button(mainframe, text="5", command=lambda: add_display("5"), font=font, bd=bd, width=width).grid(row=2, column=1,sticky=sticky)
-        Button(mainframe, text="4", command=lambda: add_display("4"), font=font, bd=bd, width=width).grid(row=2, column=0,sticky=sticky)
+        Button(mainframe, text="*", command=lambda: send_key("*",target), font=font, bd=bd, width=width).grid(row=2, column=3,sticky=sticky)
+        Button(mainframe, text="6", command=lambda: send_key("6",target), font=font, bd=bd, width=width).grid(row=2, column=2,sticky=sticky)
+        Button(mainframe, text="5", command=lambda: send_key("5",target), font=font, bd=bd, width=width).grid(row=2, column=1,sticky=sticky)
+        Button(mainframe, text="4", command=lambda: send_key("4",target), font=font, bd=bd, width=width).grid(row=2, column=0,sticky=sticky)
         # row 2
-        Button(mainframe, text="-", command=lambda: add_display("-"), font=font, bd=bd, width=width).grid(row=3, column=3,sticky=sticky)
-        Button(mainframe, text="3", command=lambda: add_display("3"), font=font, bd=bd, width=width).grid(row=3, column=2,sticky=sticky)
-        Button(mainframe, text="2", command=lambda: add_display("2"), font=font, bd=bd, width=width).grid(row=3, column=1,sticky=sticky)
-        Button(mainframe, text="1", command=lambda: add_display("1"), font=font, bd=bd, width=width).grid(row=3, column=0,sticky=sticky)
+        Button(mainframe, text="-", command=lambda: send_key("-",target), font=font, bd=bd, width=width).grid(row=3, column=3,sticky=sticky)
+        Button(mainframe, text="3", command=lambda: send_key("3",target), font=font, bd=bd, width=width).grid(row=3, column=2,sticky=sticky)
+        Button(mainframe, text="2", command=lambda: send_key("2",target), font=font, bd=bd, width=width).grid(row=3, column=1,sticky=sticky)
+        Button(mainframe, text="1", command=lambda: send_key("1",target), font=font, bd=bd, width=width).grid(row=3, column=0,sticky=sticky)
         # row 1
-        Button(mainframe, text="+", command=lambda: add_display("+"), font=font, bd=bd, width=width).grid(row=4, column=3,sticky=sticky)
-        Button(mainframe, text="=", command=equals_Key, font=font, bd=bd, width=width).grid(row=4, column=2,sticky=sticky)
-        Button(mainframe, text=".", command=lambda: add_display("."), font=font, bd=bd, width=width).grid(row=4, column=1,sticky=sticky)
-        Button(mainframe, text="0", command=lambda: add_display("0"), font=font, bd=bd, width=width).grid(row=4, column=0,sticky=sticky)
+        Button(mainframe, text="+", command=lambda: send_key("+",target), font=font, bd=bd, width=width).grid(row=4, column=3,sticky=sticky)
+        Button(mainframe, text="=", command=lambda: equals_key(target), font=font, bd=bd, width=width).grid(row=4, column=2,sticky=sticky)
+        Button(mainframe, text=".", command=lambda: send_key(".",target), font=font, bd=bd, width=width).grid(row=4, column=1,sticky=sticky)
+        Button(mainframe, text="0", command=lambda: send_key("0",target), font=font, bd=bd, width=width).grid(row=4, column=0,sticky=sticky)
 
 if __name__ == "__main__":
     root = Tk()

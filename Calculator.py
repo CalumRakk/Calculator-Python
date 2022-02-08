@@ -1,37 +1,54 @@
 
 import re
 
+def getNumberDataType(string):
+    if type(string)!=str:
+        string= str(string)
+    
+    if isFloat(string):
+        return float(string)
+    elif string.isdigit():
+        return int(string)
+    raise ValueError("No es un número")
 def isFloat(string):
-    tokens= re.search("-*\d+\.\d+(e\+\d+)*", string)
-    """
-    -* es para que pueda tener un signo negativo o no
-    \d+\.\d+ tiene que tener un  o más número, seguido de un punto y un número decimal
-    (e\+\d+)* Si tiene e seguido de un signo + y un número entero es float como número cientifico
-    """
-    if tokens:
+    if type(string)!=str: 
+        string= str(string)        
+        
+    match= re.search("\d*\.\d*[e+]*\d+", string.replace("-",""))
+    if match:
         return True
     return False   
-def isScientificNumber(string):
-    pass
-
+def printExpression(left, operator, right, result):
+    print(f"{left} {operator} {right} = {result}")    
 # Operaciones aritmeticas
-def Suma(valor1,valor2):
-    suma=int(float(valor1))+int(float(valor2))
-    print(valor1,valor2,sep="+",end=f"={suma}\n")
+def Sumar(operando1,operando2):
+    operando1= getNumberDataType(operando1)  
+    operando2= getNumberDataType(operando2)
+    
+    suma=operando1+operando2
+    printExpression(operando1,"+",operando2,suma)
     return suma
-def Multiplicar(factor, factor2):
-    producto= int(float(factor)) * int(float(factor2))
-    print(factor,factor2,sep="*",end=f"={producto}\n")
+def Multiplicar(operando1,operando2):
+    factor= getNumberDataType(operando1)  
+    factor2= getNumberDataType(operando2)
+    
+    producto= factor * factor2
+    printExpression(operando1,"*",operando2, producto)
     return producto
-def Restar(minuendo,substraendo):
-    diferencia= int(float(minuendo)) - int(float(substraendo))
-    print(minuendo,substraendo,sep="-",end=f"={diferencia}\n")
+def Restar(operando1,operando2):
+    minuendo= getNumberDataType(operando1) 
+    substraendo= getNumberDataType(operando2)
+    
+    diferencia= minuendo - substraendo
+    printExpression(operando1,"-",operando2, diferencia)
     return diferencia
-def Dividir(dividendo,divisor):
-    cociente= int(float(dividendo)) / int(float(divisor))
-    print(dividendo,divisor,sep="/",end=f"={cociente}\n")
+def Dividir(operando1,operando2):
+    dividendo= getNumberDataType(operando1) 
+    divisor= getNumberDataType(operando2)
+    
+    cociente= dividendo / divisor
+    printExpression(operando1,"/",operando2, cociente)
     return cociente
-
 # Precedencia
 precedence={
     "operador": {
@@ -56,7 +73,7 @@ def isBracket(element):
     if element in ["(",")"]:
         return True
     return False
-def get_rpn(elements):    
+def get_rpn(elements): 
     out= []
     operadores= []    
     for element in elements: 
@@ -86,7 +103,7 @@ def get_index_first_operator(elements):
         if isOperator(element):
             return index
     return -1
-def operate_expression(rpn):
+def operate_expression(rpn)-> "different values":
     while len(rpn)>2:
         index= get_index_first_operator(rpn)        
         right_operand= rpn[index - 2]
@@ -94,7 +111,7 @@ def operate_expression(rpn):
         operador= rpn[index]
                 
         if operador=="+":
-            resultado= Suma(right_operand,left_operand)
+            resultado= Sumar(right_operand,left_operand)
         if operador=="*":
             resultado= Multiplicar(right_operand,left_operand)
         if operador=="/":
@@ -108,18 +125,27 @@ def operate_expression(rpn):
         left.extend(righ)
         rpn= left.copy()    
     return resultado   
-def get_token(string):
+def parser(string) -> "list of strings":
     """
     :TODO: Falta someter al regex a más pruebas
-    De un String con una expresión matemática, devuelve una lista de los operandos y
-    operadores que la componen.
-    Obtiene: Decimales, enteros, números científicos tanto negativos y positivos, y operadores.
+    De un String con una expresiones matemática, devuelve una lista de los operadores y operandos que la componen.
     """
-    #2998.6666666666665/2
-    tokens= re.findall("-*\d*\.\d*[e+]*\d+|-*\d+|[^0-9]", string)
-    return tokens   
-    
-    
+    tokens=[]
+    index=0
+
+    match= re.search("^-\d+\.\d+[e+]*\d+|^-\d+", string) # Número negativo # Solo puede ser la primero expresión
+    if match: # Número 
+        init, end= match.span()
+        index= end
+        tokens.append(match.group())        
+    matchs= re.findall("\d*\.\d*[e+]*\d+|\d+|[^0-9]", string[index:]) # Solo números positivos
+    tokens.extend(matchs)     
+    return tokens
+def isExpression(string):
+    elements=parser(string)
+    if len(elements)>2:
+        return True
+    return False
     
     
     
