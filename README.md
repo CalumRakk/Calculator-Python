@@ -6,7 +6,9 @@ La calculadora no usa modulos externos ni la función eval.
 
 <img src="https://i.imgur.com/7l9fuUg.png" width="19%">
 
-Falta : 
+Falta :
 - [ ] Radicales
 - [ ] Historial o log
+
+# [Descargar](https://github.com/CalumRakk/Calculator-Python/releases)
 
