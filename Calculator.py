@@ -1,10 +1,10 @@
 
 import re
-
 def getNumberDataType(string):
     if type(string)!=str:
         string= str(string)
     
+    string= string.replace("-", "")
     if isFloat(string):
         return float(string)
     elif string.isdigit():
@@ -49,15 +49,43 @@ def Dividir(operando1,operando2):
     cociente= dividendo / divisor
     printExpression(operando1,"/",operando2, cociente)
     return cociente
+def Potencia(operando1,operando2):
+    base=getNumberDataType(operando1)
+    exponente=getNumberDataType(operando2)
+    if exponente==0:
+        return 1
+    if exponente==1:
+        return base
+    potencia= base ** exponente
+    printExpression(operando1,"^",operando2, potencia)
+    return potencia
+def Resto(operando1,operando2):
+    # https://en.wikipedia.org/wiki/Modulo_operation
+    dividendo= getNumberDataType(operando1)
+    divisor= getNumberDataType(operando2) 
+    resto= dividendo % divisor
+    printExpression(operando1,"%",operando2, resto)
+    return resto
 # Precedencia
 precedence={
+    # https://en.wikipedia.org/wiki/Shunting-yard_algorithm
     "operador": {
         "*":{"precedence":3, "associativity":"left"},
         "/":{"precedence":3, "associativity":"left"},
         "+":{"precedence":2, "associativity":"left"},
         "-":{"precedence":2, "associativity":"left"},
+        "%":{"precedence":3, "associativity":"left"},
+        "^":{"precedence":4, "associativity":"Right"},
     }
 }
+def get_number_operators(string):
+    operators=0
+    for element in string:
+        if isOperator(element):
+            operators+=1
+    eplus=string.count("e+")
+    operators-=eplus
+    return operators
 def isPrecedenceLower(element, lastOperator):
     precedence_operator= precedence["operador"][element]["precedence"] 
     precedence_last_operator= precedence["operador"][lastOperator]["precedence"]
@@ -112,12 +140,18 @@ def operate_expression(rpn)-> "different values":
                 
         if operador=="+":
             resultado= Sumar(right_operand,left_operand)
-        if operador=="*":
+        elif operador=="*":
             resultado= Multiplicar(right_operand,left_operand)
-        if operador=="/":
+        elif operador=="/":
             resultado= Dividir(right_operand,left_operand)
-        if operador=="-":
-            resultado= Restar(right_operand,left_operand)           
+        elif operador=="-":
+            resultado= Restar(right_operand,left_operand)  
+        elif operador=="^":
+            resultado= Potencia(right_operand,left_operand)
+        elif operador=="%":
+            resultado= Resto(right_operand,left_operand)
+        else:
+            raise ValueError(f"Operador no reconocido {operador}")         
 
         left= rpn[0:index - 2]
         righ= rpn[index + 1:]
@@ -128,38 +162,35 @@ def operate_expression(rpn)-> "different values":
 def parser(string) -> "list of strings":
     """
     :TODO: Falta someter al regex a más pruebas
-    De un String con una expresiones matemática, devuelve una lista de los operadores y operandos que la componen.
+    De un String con una expresione matemática, devuelve una lista de los operadores y operandos que la componen.
     """
     tokens=[]
     index=0
+    end= len(string)
 
-    match= re.search("^-\d+\.\d+[e+]*\d+|^-\d+", string) # Número negativo # Solo puede ser la primero expresión
-    if match: # Número 
-        init, end= match.span()
-        index= end
-        tokens.append(match.group())        
-    matchs= re.findall("\d*\.\d*[e+]*\d+|\d+|[^0-9]", string[index:]) # Solo números positivos
-    tokens.extend(matchs)     
+    match= re.search("^-\d+\.\d+[e+]*\d+|^-\d+", string) # coincide con un número negativo al principio
+    if match and get_number_operators(string) > 1: # Número 
+        index= match.span()[1]
+        tokens.append(match.group())    
+    match= re.search("-\d+\.\d+[e+]*\d+$|-\d+$", string) # coincide con un número negativo al final  
+    if match and get_number_operators(string) > 1: # Número 
+        end= match.span()[0]
+        tokens.append(match.group()) 
+               
+    matchs= re.findall("\d+\.\d+e\+\d+|\d\.\d|\d+\.\d+|\d+|[^0-9]", string[index:end]) # Solo números positivos
+    tokens.extend(matchs)  
+    # Corregido temporal:
+    while True:
+        if tokens.count("0")>1:
+            if "0" in tokens:
+                tokens.remove("0")
+        break
+    # end   
     return tokens
 def isExpression(string):
     elements=parser(string)
     if len(elements)>2:
         return True
     return False
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
-
-
-
-    
-
-
-
+#:FIXME: La precedencia da error con esta expresion 0-3.3*-6. La solución fue eliminar el cero de los rpn, pero eso no parece ser una solución elegante.
