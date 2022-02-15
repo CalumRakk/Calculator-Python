@@ -225,7 +225,7 @@ def getLastNegative(string):
     Si el último número es negativo, lo retorna
     """
     match= re.search(fr"-{regex.positive_cientific}$|-{regex.positive_float}$|-{regex.positive_integer}$", string)
-    if match and count_operators(string) > 1:
+    if match and count_operators(string) > 1 and count_type_of_operators(string) > 1:
         number= match.group()
         return number
     return ""
@@ -246,4 +246,13 @@ def simplified_number(result):
         if len(string)>18:
             return float(result)
     return result
+def count_type_of_operators(string):
+    """
+    Cuenta el tipo de operador que se encuentra en la expresión
+    """
+    operators=[]
+    for element in string:
+        if isOperator(element):
+            operators.append(element)
     
+    return len(set(operators))  
