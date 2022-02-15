@@ -39,6 +39,7 @@ def get_rpn(elements):
     out.extend(operadores[::-1] )  
     return out
 def operate_expression(rpn):
+    convert_stringLy_to_numberLy(rpn) 
     while len(rpn)>2:
         index= get_index_first_operator(rpn)        
         
@@ -74,20 +75,18 @@ def parser(string) -> "list of strings":
     """
     
     init= getFirstNegative(string)
-    string= string.replace(init,"")
+    string= string.replace(init,"",1)
     
     end= getLastNegative(string)
-    string= string.replace(end,"")
+    string= string.replace(end,"",1)
     
-    tokens=[]
-               
-    matchs= re.findall("\d+\.\d+e\+\d+|\d\.\d|\d+\.\d+|\d+|[^0-9]", string) # Solo números positivos
+    tokens=[]       
+    matchs= re.findall(fr"{regex.positive_cientific}|{regex.positive_float}|{regex.positive_integer}|{regex.operator}", string)
     
     if init: tokens.append(init)
     tokens.extend(matchs) 
     if end: tokens.append(end)  
-    
-    convert_stringLy_to_numberLy(tokens)     
+        
     return tokens
 
 # Operaciones aritmeticas
@@ -123,9 +122,12 @@ def Potencia(operando1,operando2):
         return 1
     if exponente==1:
         return base
-    potencia= base ** exponente
-    printExpression(base,"^",exponente, potencia)
-    return potencia
+    try:
+        potencia= base ** exponente
+        printExpression(base,"^",exponente, potencia)
+        return potencia
+    except OverflowError:
+        return "Result too large"
 def Resto(operando1,operando2):
     # https://en.wikipedia.org/wiki/Modulo_operation
     dividendo= operando1
@@ -135,16 +137,38 @@ def Resto(operando1,operando2):
     return resto
 
 # Funciones para parsear la expresion matemática (string)
-def getNumberDataType(string):        
-    absoluteNumber= string.replace("-", "")
-    
-    if isFloat(absoluteNumber):
+class Regex:
+    def __init__(self):
+        self.positive_integer= "\d+"
+        self.positive_cientific= "\d+\.\d+e[+-]\d+"
+        self.positive_float= "\d+\.\d+"
+        self.operator="[^0-9]"        
+        self.integer= "-*"+self.positive_integer
+        self.cientific= "-*"+self.positive_cientific
+        self.float= "-*"+self.positive_float
+regex= Regex()      
+
+def getNumberDataType(string):       
+    if isFloat(string) or isCientific(string):
         return float(string)
-    elif absoluteNumber.isdigit():
+    elif isInterger(string):
         return int(string)
     raise ValueError("No es un número")
-def isFloat(string):    
-    match= re.search("\d*\.\d*[e+]*\d+", string.replace("-",""))
+def isInterger(string):
+    #match= re.search("^"+intergerRex+"$", string)
+    match= re.search(fr"^{regex.integer}$", string)
+    if match:
+        return True
+    return False
+def isCientific(string):
+    #match= re.search(isCientificRex+"$", string.replace("-",""))
+    match= re.search(fr"^{regex.cientific}$", string)
+    if match:
+        return True
+    return False     
+def isFloat(string): 
+    #match= re.search(floatRex+"$", string)
+    match= re.search(fr"^{regex.float}$", string)
     if match:
         return True
     return False   
@@ -161,6 +185,10 @@ def isOperator(element):
     return False
 def isBracket(element):
     if element in ["(",")"]:
+        return True
+    return False
+def isSign(element):
+    if element in ["+","-"]:
         return True
     return False
 def count_operators(string):
@@ -185,10 +213,10 @@ def get_index_first_operator(elements):
     return -1
 def getFirstNegative(string):
     """
-    Si el primer número de la expresion es positivo, lo retorna
+    Si el primer número es positivo, lo retorna
     """
-    match= re.search("^-\d+\.\d+[e+]*\d+|^-\d+", string) # coincide con un número negativo al principio
-    if match and count_operators(string) > 1: # Número 
+    match= re.search(fr"^-{regex.positive_cientific}|^-{regex.positive_float}|^-{regex.positive_integer}", string)
+    if match and count_operators(string) > 1:
         number= match.group()
         return number
     return ""
@@ -196,9 +224,8 @@ def getLastNegative(string):
     """
     Si el último número es negativo, lo retorna
     """
-    match= re.search("-\d+\.\d+[e+]*\d+$|-\d+$", string) # coincide con un número negativo al final  
-    
-    if match and count_operators(string) > 1: # Número 
+    match= re.search(fr"-{regex.positive_cientific}$|-{regex.positive_float}$|-{regex.positive_integer}$", string)
+    if match and count_operators(string) > 1:
         number= match.group()
         return number
     return ""
@@ -208,3 +235,15 @@ def convert_stringLy_to_numberLy(tokens):
             continue
         tokens[index]= getNumberDataType(token) 
     return tokens  
+def simplified_number(result):
+    string= str(result)
+    if isFloat(string):
+        if string.split(".")[1]=="0":
+            return int(result)
+        elif len(string.split(".")[1])>2:
+            return round(result, 2)
+    elif isInterger(string):
+        if len(string)>18:
+            return float(result)
+    return result
+    
