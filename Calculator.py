@@ -1,6 +1,6 @@
 import re
 
-# Precedencia
+
 precedence={
     # https://en.wikipedia.org/wiki/Shunting-yard_algorithm
     "operador": {
@@ -13,7 +13,12 @@ precedence={
     }
 }
 
-def get_rpn(elements): 
+# Funciones principales
+def get_rpn(tokens:list)-> list: 
+    """
+    Convierte una expresion matemática de notación infija en una expresión en notación polaca inversa.
+    """
+    elements=tokens
     out= []
     operadores= []    
     for element in elements: 
@@ -38,7 +43,10 @@ def get_rpn(elements):
         
     out.extend(operadores[::-1] )  
     return out
-def operate_expression(rpn):
+def operate_rpn(rpn:list):
+    """
+    Evalua una expresión en notación polaca inversa.
+    """
     convert_stringLy_to_numberLy(rpn) 
     while len(rpn)>2:
         index= get_index_first_operator(rpn)        
@@ -68,26 +76,33 @@ def operate_expression(rpn):
         left.extend(righ)
         rpn= left.copy()    
     return resultado   
-def parser(string) -> "list of strings":
+def operand_separator(string:str)->list:
     """
-    :TODO: Falta someter al regex a más pruebas
-    De un String con una expresion matemática, devuelve una lista de los operadores y operandos que la componen.
+    Devuelve una lista con los elementos separados por operadores matemáticos.
+    :return: 2+3*4 -> ['2','+','3','*','4']
     """
+    regex= re.compile(r"\b(?<!e)[^0-9.]")
+    # Encuentra en el limite de un «caracter de palabra» un «no digito» que no sea punto y no esté precedido por una e
+    # \b significa límite de palabra.
+    # (?<!e) significa que no se puede encontrar la letra e
+    # [^0-9.] significa que no se puede encontrar un número ni un punto
+    operands= regex.split(string)
+    operators= regex.findall(string)
     
-    init= getFirstNegative(string)
-    string= string.replace(init,"",1)
-    
-    end= getLastNegative(string)
-    string= string.replace(end,"",1)
-    
-    tokens=[]       
-    matchs= re.findall(fr"{regex.positive_cientific}|{regex.positive_float}|{regex.positive_integer}|{regex.operator}", string)
-    
-    if init: tokens.append(init)
-    tokens.extend(matchs) 
-    if end: tokens.append(end)  
-        
-    return tokens
+    operators.reverse()
+    merge=[]
+    for num in operands:
+        merge.append(num)
+        if len(operators)>0:
+            op= operators.pop()
+            merge.append(op)        
+    return merge
+
+def operate_expression(string):
+    tokens= operand_separator(string)
+    rpn= get_rpn(tokens)
+    result= operate_rpn(rpn)
+    return simplify_result(result)
 
 # Operaciones aritmeticas
 def Sumar(operando1,operando2):    
@@ -125,6 +140,8 @@ def Potencia(operando1,operando2):
     try:
         potencia= base ** exponente
         printExpression(base,"^",exponente, potencia)
+        if type(potencia)==complex:
+            return potencia.real
         return potencia
     except OverflowError:
         return "Result too large"
@@ -136,18 +153,7 @@ def Resto(operando1,operando2):
     printExpression(dividendo,"%",divisor, resto)
     return resto
 
-# Funciones para parsear la expresion matemática (string)
-class Regex:
-    def __init__(self):
-        self.positive_integer= "\d+"
-        self.positive_cientific= "\d+\.\d+e[+-]\d+"
-        self.positive_float= "\d+\.\d+"
-        self.operator="[^0-9]"        
-        self.integer= "-*"+self.positive_integer
-        self.cientific= "-*"+self.positive_cientific
-        self.float= "-*"+self.positive_float
-regex= Regex()      
-
+# Funciones auxiliares 
 def getNumberDataType(string):       
     if isFloat(string) or isCientific(string):
         return float(string)
@@ -156,32 +162,31 @@ def getNumberDataType(string):
     raise ValueError("No es un número")
 def isInterger(string):
     #match= re.search("^"+intergerRex+"$", string)
-    match= re.search(fr"^{regex.integer}$", string)
+    match= re.search("-*\d+", string)
     if match:
         return True
     return False
 def isCientific(string):
     #match= re.search(isCientificRex+"$", string.replace("-",""))
-    match= re.search(fr"^{regex.cientific}$", string)
+    match= re.search("-*\d+\.\d+e[+-]\d+", string)
     if match:
         return True
     return False     
 def isFloat(string): 
     #match= re.search(floatRex+"$", string)
-    match= re.search(fr"^{regex.float}$", string)
+    match= re.search("-*\d+\.\d+", string)
     if match:
         return True
     return False   
 def printExpression(left, operator, right, result):
     print(f"{left} {operator} {right} = {result}")    
-def isExpression(string):
-    elements=parser(string)
-    if len(elements)>2:
-        return True
-    return False
 def isOperator(element):
     if precedence["operador"].get(element):
         return True    
+    return False
+def isGroupingSign(element):
+    if element in ["(",")", "[","]","{","}"]:
+        return True
     return False
 def isBracket(element):
     if element in ["(",")"]:
@@ -211,36 +216,18 @@ def get_index_first_operator(elements):
         if isOperator(element):
             return index
     return -1
-def getFirstNegative(string):
-    """
-    Si el primer número es positivo, lo retorna
-    """
-    match= re.search(fr"^-{regex.positive_cientific}|^-{regex.positive_float}|^-{regex.positive_integer}", string)
-    if match and count_operators(string) > 1:
-        number= match.group()
-        return number
-    return ""
-def getLastNegative(string):
-    """
-    Si el último número es negativo, lo retorna
-    """
-    match= re.search(fr"-{regex.positive_cientific}$|-{regex.positive_float}$|-{regex.positive_integer}$", string)
-    if match and count_operators(string) > 1 and count_type_of_operators(string) > 1:
-        number= match.group()
-        return number
-    return ""
 def convert_stringLy_to_numberLy(tokens):
     for index, token in enumerate(tokens):
-        if isOperator(token):
+        if isOperator(token) or isGroupingSign(token):
             continue
         tokens[index]= getNumberDataType(token) 
     return tokens  
-def simplified_number(result):
+def simplify_result(result):
     string= str(result)
     if isFloat(string):
         if string.split(".")[1]=="0":
             return int(result)
-        elif len(string.split(".")[1])>2:
+        elif len(string.split(".")[1])=="00":
             return round(result, 2)
     elif isInterger(string):
         if len(string)>18:
@@ -256,3 +243,4 @@ def count_type_of_operators(string):
             operators.append(element)
     
     return len(set(operators))  
+   
