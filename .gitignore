@@ -1,2 +1,8 @@
+# Excluir
 */
 *.txt
+*test*.py
+
+# Incluir:
+!test/
+!test/data.txt

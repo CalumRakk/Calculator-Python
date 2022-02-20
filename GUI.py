@@ -4,33 +4,25 @@ import Calculator
 from Calculator import isSign, isOperator
 
 def isDisplayConcatenable(key,displayText):
-    # Si display vale 0, key tiene que ser un operador o un punto.
     
-    # Si el último digito de display es un digito diferente a cero, key tiene que ser un digito, punto o operador.
-    # si el último digito de display es un punto, key tiene que ser un digito.
+    # Si el último digito de display es un digito o es igual a cero, key tiene que ser un digito, operador o punto.
+    # Si el último digito de display es un un punto, key tiene que ser un digito.
     # Si el último digito de display es un operador, key tiene que ser un digito.
-    # Si el último digito de display es un operador, key tiene que ser un signo positivo o negativo y display diferente de + o -.
-    
     lastDigit= displayText[-1]
-    if lastDigit.isdigit():
+    if lastDigit.isdigit() or lastDigit=="0":
         if key.isdigit():
             return True
         elif key==".":
             return True
         elif isOperator(key):
             return True        
-    elif lastDigit=="0":
-        if isSign(key):
-            return True
-        elif key==".":
-            return True
-        elif isOperator(key):
-            return True
     elif lastDigit==".":
         if key.isdigit():
             return True
-    elif isOperator(lastDigit):
-        if key.isdigit() or isSign(key):
+    elif isOperator(lastDigit) and not isSign(lastDigit):
+        if key.isdigit():
+            return True
+        if isSign(key):
             return True
     elif isSign(lastDigit):
         if key.isdigit():
@@ -64,12 +56,10 @@ def equals_key(target):
     
     displayText= entryVar.get()
     lastDigit= displayText[-1]
-    if lastDigit.isdigit() and Calculator.isExpression(displayText):
-        tokens= Calculator.parser(displayText)
-        rpn= Calculator.get_rpn(tokens)
-        result= Calculator.operate_expression(rpn)
+    if lastDigit.isdigit():
+        result= Calculator.operate_expression(displayText)
         
-        entryVar.set(Calculator.simplified_number(result))
+        entryVar.set(result)
         display.xview(END)
     else:
         display.configure(foreground="red")
@@ -105,7 +95,7 @@ class Application(Frame):
         mainframe.grid(column=0, row=0,columnspan=3, rowspan=3, sticky=(N, W, E, S), padx=10,pady=15 )
         
         # Display and row 0
-        entryVar= StringVar(value="0")
+        entryVar= StringVar(value="0*-3-9/3-3-9")
         display= Entry(mainframe,textvariable=entryVar, font=("Verdana", 22, ), bd = 3,
                       state='readonly',
                       cursor="arrow",

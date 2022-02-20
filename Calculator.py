@@ -1,3 +1,4 @@
+import enum
 import re
 
 
@@ -45,10 +46,11 @@ def get_rpn(tokens:list)-> list:
     return out
 def operate_rpn(rpn:list):
     """
-    Evalua una expresión en notación polaca inversa.
+    Evalua una expresión de notación polaca inversa.
     """
     convert_stringLy_to_numberLy(rpn) 
     while len(rpn)>2:
+        print(rpn)
         index= get_index_first_operator(rpn)        
         
         right_operand= rpn[index - 2]
@@ -75,34 +77,91 @@ def operate_rpn(rpn:list):
         left.append(resultado)
         left.extend(righ)
         rpn= left.copy()    
+    
     return resultado   
-def operand_separator(string:str)->list:
+def separator2(string):
+    """""
+    Separador de expresiones con aridad 2
+    """
+    number= "([-+]*\d+\.\d+e[+-]\d+|[-+]*\d+\.\d+|[-+]*\d+)"
+    operator= "[\^*%\/]"
+    #regex= re.compile(fr"(([-+]?{number})?[^0-9]([-+]?{number}(?![*\^\/]))?)")
+    regex= re.compile(fr"(((?<=[^0-9]|\d)[+-])?{number}[^0-9][+-]?{number}[^0-9]?)")
+    
+    groups= ["".join(group[0]) for group in regex.findall(string)]
+    
+    match=[] 
+    for element in groups[:]:
+        if count_operators(element)>=1:
+            match.append(element) 
+        if element=="":
+            groups.remove(element)
+    
+    for i in match:
+        operands= separator(i)
+        
+        index= groups.index(i)
+        left= groups[0:index]
+        right= groups[index+1:]
+        left.extend(operands)
+        left.extend(right)
+        groups= left.copy() 
+        
+    for element in groups[:]:
+        if element=="":
+            groups.remove(element)
+    return groups
+    
+def separator(string:str)->list:
     """
     Devuelve una lista con los elementos separados por operadores matemáticos.
     :return: 2+3*4 -> ['2','+','3','*','4']
     """
-    regex= re.compile(r"\b(?<!e)[^0-9.]")
+    
+    regex= re.compile(r"\b(?<!e)[^0-9.](?!\d+\/)")
+
     # Encuentra en el limite de un «caracter de palabra» un «no digito» que no sea punto y no esté precedido por una e
     # \b significa límite de palabra.
     # (?<!e) significa que no se puede encontrar la letra e
     # [^0-9.] significa que no se puede encontrar un número ni un punto
     operands= regex.split(string)
     operators= regex.findall(string)
-    
+
     operators.reverse()
     merge=[]
     for num in operands:
         merge.append(num)
         if len(operators)>0:
             op= operators.pop()
-            merge.append(op)        
+            merge.append(op)
+    
+    # regex= re.compile(r"([-+]\d*(\.\d*e[+-]\d*|\.\d*)?)")
+    # # Elementos que tienen más de un operador.
+    # match=[] 
+    # for element in merge:
+    #     if count_operators(element)>1:
+    #         match.append(element)    
+    
+    # for i in match:
+    #     operands= ["".join(group[0]) for group in regex.findall(i)]
+        
+    #     index= merge.index(i)
+    #     left= merge[0:index]
+    #     right= merge[index+1:]
+    #     left.extend(operands)
+    #     left.extend(right)
+    #     merge= left.copy()                                   
+    
     return merge
 
-def operate_expression(string):
-    tokens= operand_separator(string)
+def operate_expression(string,print_result=True):
+    tokens= separator2(string)
     rpn= get_rpn(tokens)
     result= operate_rpn(rpn)
-    return simplify_result(result)
+    result= simplify_result(result)
+    if print_result:
+        print(f"{string} = {result}")
+    return result
 
 # Operaciones aritmeticas
 def Sumar(operando1,operando2):    
@@ -162,24 +221,25 @@ def getNumberDataType(string):
     raise ValueError("No es un número")
 def isInterger(string):
     #match= re.search("^"+intergerRex+"$", string)
-    match= re.search("-*\d+", string)
+    match= re.search("[-+]*\d+", string)
     if match:
         return True
     return False
 def isCientific(string):
     #match= re.search(isCientificRex+"$", string.replace("-",""))
-    match= re.search("-*\d+\.\d+e[+-]\d+", string)
+    match= re.search("[-+]*\d+\.\d+e[+-]\d+", string)
     if match:
         return True
     return False     
 def isFloat(string): 
     #match= re.search(floatRex+"$", string)
-    match= re.search("-*\d+\.\d+", string)
+    match= re.search("[-+]*\d+\.\d+", string)
     if match:
         return True
     return False   
 def printExpression(left, operator, right, result):
-    print(f"{left} {operator} {right} = {result}")    
+    #print(f"{left} {operator} {right} = {result}")  
+    pass
 def isOperator(element):
     if precedence["operador"].get(element):
         return True    
@@ -243,4 +303,3 @@ def count_type_of_operators(string):
             operators.append(element)
     
     return len(set(operators))  
-   
