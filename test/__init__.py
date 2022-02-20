@@ -4,7 +4,7 @@ import sys,os
 carpeta_raiz = os.getcwd() # guilded_rose
 sys.path.append(carpeta_raiz)
 
-from Calculator import operate_expression, getNumberDataType,separator,get_rpn, operate_rpn
+from Calculator import operate_expression, getNumberDataType
 
 
 def get_expresions():
@@ -21,7 +21,7 @@ class TestCalculator(unittest.TestCase):
 
     def test_operate_expression(self):
         for line in get_expresions():
-            expresion, result= line          
+            expresion, result= line  
             self.assertEqual(operate_expression(expresion, False), result)
 
 if __name__ == '__main__':

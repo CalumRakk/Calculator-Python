@@ -57,10 +57,14 @@ def equals_key(target):
     displayText= entryVar.get()
     lastDigit= displayText[-1]
     if lastDigit.isdigit():
-        result= Calculator.operate_expression(displayText)
-        
-        entryVar.set(result)
-        display.xview(END)
+        try:
+            result= Calculator.operate_expression(displayText)
+            
+            entryVar.set(result)
+            display.xview(END)
+        except:
+            display.configure(foreground="red")
+            root.after(1, lambda: displayWarning(target))  
     else:
         display.configure(foreground="red")
         root.after(1, lambda: displayWarning(target))   
@@ -95,7 +99,7 @@ class Application(Frame):
         mainframe.grid(column=0, row=0,columnspan=3, rowspan=3, sticky=(N, W, E, S), padx=10,pady=15 )
         
         # Display and row 0
-        entryVar= StringVar(value="0*-3-9/3-3-9")
+        entryVar= StringVar(value="0")
         display= Entry(mainframe,textvariable=entryVar, font=("Verdana", 22, ), bd = 3,
                       state='readonly',
                       cursor="arrow",

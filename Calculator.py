@@ -78,84 +78,42 @@ def operate_rpn(rpn:list):
         left.extend(righ)
         rpn= left.copy()    
     
-    return resultado   
-def separator2(string):
-    """""
-    Separador de expresiones con aridad 2
-    """
-    number= "([-+]*\d+\.\d+e[+-]\d+|[-+]*\d+\.\d+|[-+]*\d+)"
-    operator= "[\^*%\/]"
-    #regex= re.compile(fr"(([-+]?{number})?[^0-9]([-+]?{number}(?![*\^\/]))?)")
-    regex= re.compile(fr"(((?<=[^0-9]|\d)[+-])?{number}[^0-9][+-]?{number}[^0-9]?)")
-    
-    groups= ["".join(group[0]) for group in regex.findall(string)]
-    
-    match=[] 
-    for element in groups[:]:
-        if count_operators(element)>=1:
-            match.append(element) 
-        if element=="":
-            groups.remove(element)
-    
-    for i in match:
-        operands= separator(i)
-        
-        index= groups.index(i)
-        left= groups[0:index]
-        right= groups[index+1:]
-        left.extend(operands)
-        left.extend(right)
-        groups= left.copy() 
-        
-    for element in groups[:]:
-        if element=="":
-            groups.remove(element)
-    return groups
-    
+    return resultado    
 def separator(string:str)->list:
     """
     Devuelve una lista con los elementos separados por operadores matemáticos.
     :return: 2+3*4 -> ['2','+','3','*','4']
     """
+    # FIXME: El regex no es perfecto, existen expresiones que no se pueden separar y dan resultados erroneos. 
+    r_number= r"([-+]*\d+\.\d+e[+-]\d+|[-+]*\d+\.\d+|[-+]?\d+)"
+    regex= re.compile(r_number)
     
-    regex= re.compile(r"\b(?<!e)[^0-9.](?!\d+\/)")
-
-    # Encuentra en el limite de un «caracter de palabra» un «no digito» que no sea punto y no esté precedido por una e
-    # \b significa límite de palabra.
-    # (?<!e) significa que no se puede encontrar la letra e
-    # [^0-9.] significa que no se puede encontrar un número ni un punto
-    operands= regex.split(string)
-    operators= regex.findall(string)
-
-    operators.reverse()
-    merge=[]
-    for num in operands:
-        merge.append(num)
-        if len(operators)>0:
-            op= operators.pop()
-            merge.append(op)
-    
-    # regex= re.compile(r"([-+]\d*(\.\d*e[+-]\d*|\.\d*)?)")
-    # # Elementos que tienen más de un operador.
-    # match=[] 
-    # for element in merge:
-    #     if count_operators(element)>1:
-    #         match.append(element)    
-    
-    # for i in match:
-    #     operands= ["".join(group[0]) for group in regex.findall(i)]
+    tokens=[]
+    operador_requerido=False
+    while True:        
+        if bool(string)==False:
+            break
         
-    #     index= merge.index(i)
-    #     left= merge[0:index]
-    #     right= merge[index+1:]
-    #     left.extend(operands)
-    #     left.extend(right)
-    #     merge= left.copy()                                   
-    
-    return merge
+        match= regex.match(string)         
+        if match and operador_requerido==False:
+            number= match.group()
+            end= match.end()
+            string= string[end:]
+            
+            tokens.append(number)
+            operador_requerido=True
+        else:
+            end= 1
+            number= string[0]
+            
+            string= string[end:] 
+            tokens.append(number)
+            operador_requerido=False           
+            
+    return tokens
 
 def operate_expression(string,print_result=True):
-    tokens= separator2(string)
+    tokens= separator(string)
     rpn= get_rpn(tokens)
     result= operate_rpn(rpn)
     result= simplify_result(result)
